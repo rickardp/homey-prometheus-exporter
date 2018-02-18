@@ -12,7 +12,8 @@
     "version": "0.1.1",
     "compatibility": ">=1.5.6",
     "author": {
-        "name": "Rickard"
+        "name": "Rickard",
+        "email": "athom@evolviq.com"
     },
     "images" : {
     	"small": "assets/images/small.png",
