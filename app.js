@@ -18,7 +18,8 @@ const gauge_cpu_speed = new client.Gauge({ name: 'homey_cpu_speed', help: 'Speed
 const gauge_load_average_1 = new client.Gauge({ name: 'homey_load_average_1', help: 'Load average (1 minute)' });
 const gauge_load_average_5 = new client.Gauge({ name: 'homey_load_average_5', help: 'Load average (5 minutes)' });
 const gauge_load_average_15 = new client.Gauge({ name: 'homey_load_average_15', help: 'Load average (15 minutes)' });
-let device_metrics = {}
+let gauge_device = {}
+let device_labels = {}
 
 //require('inspector').open(9229, '0.0.0.0', true);
 
@@ -29,7 +30,7 @@ class PrometheusApp extends Homey.App {
         }
         return this.api;
     }
-    
+
     async getDevices() {
 		const api = await this.getApi();
 		allDevices = await api.devices.getDevices();
@@ -65,6 +66,7 @@ class PrometheusApp extends Homey.App {
         //console.log(systeminfo);
 
 	let respond = function(request, response) {
+            response.contentType("text/plain; charset=utf-8");
             response.end(client.register.metrics());
         };
 
@@ -72,80 +74,62 @@ class PrometheusApp extends Homey.App {
         server.get("/prometheus/metrics", respond);
         server.listen(9414);
     }
-    
+
     async updateDeviceList() {
         this.log('Update device list');
         let api = await this.getApi();
     	let zones = await api.zones.getZones();
     	let devices = await api.devices.getDevices();
-    	let all = {}
+
     	for(let devId in devices) {
-    		let devname = this.getCanonicalDeviceString(devices[devId], zones);
-    		all[devname] = devices[devId]
+    		this.registerDevice(devId, devices[devId], zones);
     	}
-	    
-    	for(let devname in all) {
-    		this.registerDevice(devname, all[devname])
-    	}
-    	for(let devname in device_metrics) {
-    		if(!(devname in all)) {
-    			console.log("Device " + devname + " no longer present");
-    			device_metrics[devname].disabled = true
-    		}
-    	}
-    }
-    
-    getCanonicalDeviceString(dev, zones) {
-    	let prefix = dev.zone ? this.getCanonicalZoneString(dev.zone.id, zones) + "_" : "";
-    	return prefix + this.transformName(dev.name);
-    }
-    
-    getCanonicalZoneString(zoneId, zones) {
-    	let zone = zones[zoneId];
-    	let prefix = zone.parent ? this.getCanonicalZoneString(zone.parent, zones) + "_" : "";
-    	return prefix + this.transformName(zone.name);
-    }
-    
-    transformName(name) {
-    	return name.toLowerCase().normalize("NFD").replace(/[ -]+/g, "_").replace(/[^a-z0-9_]/g, "")
     }
 
-    registerDevice(devname, dev) {
-        if(!(devname in device_metrics)) {
-            device_metrics[devname] = {};
-            console.log("Registering device " + devname);
-            dev.on('$state', (state, capability) => {
-            	if(!device_metrics[devname].disabled) {
-            		for(let st in state) {
-            			this.reportState(devname, st, state[st]);
-            		}
-                }
-            });
-			let s = dev.state;
-			for(let sn in s) {
-				this.reportState(devname, sn, s[sn]);
-			}
+    registerDevice(devId, dev, zones) {
+        console.log("Registering device " + devId);
+        dev.on('$state', (state, capability) => {
+            for(let st in state) {
+                this.reportState(devId, st, state[st]);
+            }
+        });
+        var labels = getZoneLabels(dev.zone.id, zones);
+        labels.device = devId;
+        labels.name = dev.name;
+        if(!(devId in device_labels)) {
+            // Report initial state
+            device_labels[devId] = labels; // Need to do this before reportState
+            let s = dev.state;
+            for(let sn in s) {
+                this.reportState(devId, sn, s[sn]);
+            }
+        } else {
+            device_labels[devId] = labels; // Update labels in case device was renamed/moved
         }
     }
-    
-    reportState(devname, statename, value) {
+
+    reportState(devId, statename, value) {
     	if(value === null || value === undefined) return;
-    	
-    	
+
         // Convert type
         if(typeof value === 'boolean')
         	value = value ? 1 : 0;
         else if(typeof value === 'string')
         	return; // Strings are not yet mapped
-    	
-        console.log("State changed for " + devname + ", " + statename);
-        let key = "r_" + statename;
-        if(!(key in device_metrics[devname])) {
-        	device_metrics[devname][key] = new client.Gauge({ name: 'homey_device_' + devname + '_' + statename, help: 'State ' + statename + ' of device ' + devname });
+
+        console.log("State changed for " + devId + ", " + statename);
+        let key = "homey_device_" + statename;
+        if(!(key in gauge_device)) {
+        	gauge_device[key] = new client.Gauge({ name: 'homey_device_' + statename, help: 'State ' + statename, labelNames: ['device', 'name', 'zone', 'zones'] });
         }
-        device_metrics[devname][key].set(value);
+        let labels = device_labels[devId]
+        if(!labels) {
+            console.log("Cannot report unknown device " + devId);
+        } else {
+            gauge_device[key].labels(labels.device, labels.name, labels.zone, labels.zones).set(value);
+        }
     }
-    
+
     async updateSystemInfo() {
         //this.log('Update system info');
         let api = await this.getApi();
@@ -157,22 +141,41 @@ class PrometheusApp extends Homey.App {
         gauge_load_average_1.set(systeminfo.loadavg[0]);
         gauge_load_average_5.set(systeminfo.loadavg[1]);
         gauge_load_average_15.set(systeminfo.loadavg[2]);
-        
+
         gauge_cpu_speed.set(systeminfo.cpus[0].speed);
-        
+
         let storageInfo = await api.system.getStorageStats();
         gauge_storage_total.set(storageInfo.total);
         gauge_storage_free.set(storageInfo.free);
 
-        let memoryInfo = await api.system.getMemoryStats();        
+        let memoryInfo = await api.system.getMemoryStats();
         gauge_memory_swap.set(memoryInfo.swap);
         for(let app in memoryInfo.types) {
             gauge_memory_used.labels(app).set(memoryInfo.types[app].size);
         }
-        
-        
+
         setTimeout(this.updateSystemInfo.bind(this), 30000);
     }
+}
+
+function getZoneLabels(zoneId, zones) {
+    let zone = zones[zoneId];
+    if (!zone) return {}
+    if (!zone.parent) {
+        let ret = {}
+        ret.home = ret.zone = ret.zones = zone.name
+        return ret
+    } else {
+        let ret = getZoneLabels(zone.parent, zones)
+        ret.zone = zone.name
+        ret.zones += '/' + ret.zone.replace('/',' ')
+        return ret
+    }
+}
+
+
+function transformName(name) {
+    return name.toLowerCase().normalize("NFD").replace(/[ -]+/g, "_").replace(/[^a-z0-9_]/g, "")
 }
 
 module.exports = PrometheusApp;
