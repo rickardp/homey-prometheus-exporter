@@ -1,20 +1,61 @@
 # Prometheus
 
-Prometheus exporter for Homey. This app is in early development. Apologies for the lack of proper documentation. More will come.
+Prometheus exporter for Homey.
 
 The following metrics are exported:
 
-* General system information (load averages, memory, storage)
-* Device state information (sensor values, state of switches, etc.)
-
+* General system information (load averages, memory, storage).
+* Device state information (sensor values, state of switches, etc.). Device state gauges are named `homey_device_<state>` and have labels for device ID, name and zones.
 
 ## How to use it
 
 First, you need a Prometheus.io instance. The easiest way to install such an instance is to use Docker. This app has been developed
 and tested with the `prom/prometheus:v2.1.0` image.
 
-To connect Prometheus to your Homey, ensure the Homey is reachable directly from the Prometheus instance. Then add `<homey_ip>:9414` to the list of 
-targets.
+
+To add the Homey to Prometheus, you need to add the IP of Homey and port 9414 to the list of scrape targets. For example (`prometheus.yml`):
+
+    <...>
+    scrape_configs:
+      <....>
+      - job_name: 'homey'
+        scrape_interval: 15s
+
+        # metrics_path defaults to '/metrics'
+        # scheme defaults to 'http'.
+
+        static_configs:
+         - targets: [
+             '<ip address of Homey>:9414'
+        ]
+
+Here is an example docker-compose file:
+
+    grafana:
+      image: grafana/grafana:5.0.1
+      ports:
+      - 3000:3000
+      volumes:
+        - ./data/grafana:/var/lib/grafana
+      restart: unless-stopped
+      environment:
+        - GF_SECURITY_ADMIN_PASSWORD=mysecretpassword
+        - GF_USERS_ALLOW_SIGN_UP=false
+        - GF_AUTH_ANONYMOUS_ENABLED=true
+    prometheus:
+      image: prom/prometheus:v2.1.0
+      ports:
+        - 9090:9090
+      volumes:
+        - ./config/prometheus:/etc/prometheus:ro
+        - ./data/prometheus:/prometheus
+        - ./logs/prometheus:/logs
+      command:
+        - '--config.file=/etc/prometheus/prometheus.yml'
+        - '--storage.tsdb.path=/prometheus'
+        - '--storage.tsdb.retention=365d'
+        - '--web.enable-admin-api'
+
 
 ## Troubleshooting
 
