@@ -20,8 +20,12 @@ const gauge_cpu = new client.Gauge({ name: 'homey_cpu', help: "CPU time per mode
 const gauge_load_average_1 = new client.Gauge({ name: 'homey_load_average_1', help: 'Load average (1 minute)' });
 const gauge_load_average_5 = new client.Gauge({ name: 'homey_load_average_5', help: 'Load average (5 minutes)' });
 const gauge_load_average_15 = new client.Gauge({ name: 'homey_load_average_15', help: 'Load average (15 minutes)' });
+const gauge_tx_total = new client.Gauge({ name: 'homey_tx_total', help: 'Total sent packets', labelNames: ['node', 'device', 'name', 'zone', 'zones'] });
+const gauge_tx_error = new client.Gauge({ name: 'homey_tx_error', help: 'Failed sent packets', labelNames: ['node', 'device', 'name', 'zone', 'zones'] });
+const gauge_rx_total = new client.Gauge({ name: 'homey_rx_total', help: 'Total received packets', labelNames: ['node', 'device', 'name', 'zone', 'zones'] });
 let gauge_device = {}
 let device_labels = {}
+let zwave_devices = {}
 
 //require('inspector').open(9229, '0.0.0.0', true);
 
@@ -49,8 +53,8 @@ class PrometheusApp extends Homey.App {
         gauge_app_start_time.set(appStartTime)
         gauge_boot_time.labels(systemInfo.homey_version).set(bootTime)
 
-        await this.updateSystemInfo();
         await this.updateDeviceList();
+        await this.updateSystemInfo();
 
 		// Adding notifiers
 		console.log("Subscribing to device changes")
@@ -91,9 +95,13 @@ class PrometheusApp extends Homey.App {
     registerDevice(devId, dev, zones) {
         console.log("Registering device " + devId);
         dev.on('$state', (state, capability) => {
+            console.log("Device state changed: " + state + " of " + devId)
             for(let st in state) {
                 this.reportState(devId, st, state[st]);
             }
+        });
+        dev.on('$update', (self) => {
+            console.log("Device updated: " + devId)
         });
         var labels = getZoneLabels(dev.zone.id, zones);
         labels.device = devId;
@@ -107,6 +115,13 @@ class PrometheusApp extends Homey.App {
             }
         } else {
             device_labels[devId] = labels; // Update labels in case device was renamed/moved
+        }
+        if(dev.flags.includes("zwave")) {
+            let zwaveId = dev.settings.zw_node_id;
+            if(zwaveId) {
+                console.log("Device " + dev.name + " has zwave node id " + zwaveId);
+                zwave_devices[zwaveId] = devId
+            }
         }
     }
 
@@ -133,10 +148,8 @@ class PrometheusApp extends Homey.App {
     }
 
     async updateSystemInfo() {
-        //this.log('Update system info');
         let api = await this.getApi();
         let systemInfo = await api.system.getInfo();
-        //console.log(systemInfo);
 
         gauge_load_average_1.set(systemInfo.loadavg[0]);
         gauge_load_average_5.set(systemInfo.loadavg[1]);
@@ -153,7 +166,6 @@ class PrometheusApp extends Homey.App {
         for(let app in storageInfo.types) {
             gauge_storage_used.labels(app).set(storageInfo.types[app].size);
         }
-        //console.log(storageInfo);
 
         let memoryInfo = await api.system.getMemoryStats();
         gauge_memory_total.set(memoryInfo.total);
@@ -162,7 +174,24 @@ class PrometheusApp extends Homey.App {
         for(let app in memoryInfo.types) {
             gauge_memory_used.labels(app).set(memoryInfo.types[app].size);
         }
-        //console.log(memoryInfo);
+
+        if(Object.keys(zwave_devices).length > 0) {
+            let zwave = await api.zwave.getState();
+            if(zwave && zwave.zw_state && zwave.zw_state.stats) {
+                //console.log(zwave)
+                console.log("Checking z-wave status")
+                for(let zwn in zwave_devices) {
+                    let net = zwave.zw_state.stats['node_' + zwn + '_network'];
+                    let labels = device_labels[zwave_devices[zwn]];
+                    if(net && labels) {
+                        gauge_tx_total.labels(zwn, labels.device, labels.name, labels.zone, labels.zones).set(net.tx);
+                        gauge_tx_error.labels(zwn, labels.device, labels.name, labels.zone, labels.zones).set(net.tx_err);
+                        gauge_rx_total.labels(zwn, labels.device, labels.name, labels.zone, labels.zones).set(net.rx);
+                    }
+                }
+            }
+        }
+        
         setTimeout(this.updateSystemInfo.bind(this), 30000);
     }
 }
