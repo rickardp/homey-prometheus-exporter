@@ -117,6 +117,9 @@ class PrometheusApp extends Homey.App {
         else if(typeof value === 'string')
         	return; // Strings are not yet mapped
 
+        // Fix sub-components in names (replace . with _)
+        statename = statename.replace('.', '_');
+
         console.log("State changed for " + devId + ", " + statename);
         let key = "homey_device_" + statename;
         if(!(key in gauge_device)) {
