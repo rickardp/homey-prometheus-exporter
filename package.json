@@ -7,7 +7,7 @@
   "dependencies": {
     "athom-api": "^2.0.93",
     "express": "^4.16.2",
-    "prom-client": "^10.2.2"
+    "prom-client": "^11.0.0"
   },
   "devDependencies": {},
   "scripts": {
