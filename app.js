@@ -24,7 +24,7 @@ const gauge_tx_total = new client.Gauge({ name: 'homey_tx_total', help: 'Total s
 const gauge_tx_error = new client.Gauge({ name: 'homey_tx_error', help: 'Failed sent packets', labelNames: ['node', 'device', 'name', 'zone', 'zones'] });
 const gauge_rx_total = new client.Gauge({ name: 'homey_rx_total', help: 'Total received packets', labelNames: ['node', 'device', 'name', 'zone', 'zones'] });
 let gauge_device = {}
-let device_labels = {}
+var device_labels = {}
 let zwave_devices = {}
 
 //require('inspector').open(9229, '0.0.0.0', true);
@@ -85,7 +85,12 @@ class PrometheusApp extends Homey.App {
         this.log('Update device list');
         let api = await this.getApi();
     	let zones = await api.zones.getZones();
-    	let devices = await api.devices.getDevices();
+        let devices = await api.devices.getDevices();
+        
+        device_labels = {}
+        for(let key in gauge_device) {
+            gauge_device[key].reset()
+        }
 
     	for(let devId in devices) {
     		this.registerDevice(devId, devices[devId], zones);
