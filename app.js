@@ -23,9 +23,11 @@ const gauge_load_average_15 = new client.Gauge({ name: 'homey_load_average_15', 
 const gauge_tx_total = new client.Gauge({ name: 'homey_tx_total', help: 'Total sent packets', labelNames: ['node', 'device', 'name', 'zone', 'zones'] });
 const gauge_tx_error = new client.Gauge({ name: 'homey_tx_error', help: 'Failed sent packets', labelNames: ['node', 'device', 'name', 'zone', 'zones'] });
 const gauge_rx_total = new client.Gauge({ name: 'homey_rx_total', help: 'Total received packets', labelNames: ['node', 'device', 'name', 'zone', 'zones'] });
+const gauge_presence = new client.Gauge({ name: 'homey_presence', help: 'User presence', labelNames: ['email'] });
 let gauge_device = {}
 var device_labels = {}
 let zwave_devices = {}
+let user_map = {}
 
 //require('inspector').open(9229, '0.0.0.0', true);
 
@@ -67,6 +69,25 @@ class PrometheusApp extends Homey.App {
             console.log('Updating device ' + id)
             this.updateDeviceList();
         });
+
+        console.log("Updating user map");
+        let users = await api.users.getUsers();
+        for(let uid in users) {
+            console.log("User " + uid + " is " + users[uid].email);
+            user_map[uid] = users[uid].email;
+        }
+
+        await this.updatePresence();
+        console.log("Subscribing to presence");
+        await api.presence.subscribe();
+        api.presence.on('presence', state => {
+            console.log('Presence changed')
+            let uid = state.user_id;
+            let present = state.present;
+
+            console.log("Presence for " + user_map[uid] + " changed to " + present);
+            this.updatePresence();
+        });
         //boot = new Date(Date.parse(x.date) - x.uptime * 1000)
         //let allDevices = await api.devices.getDevices();
         //console.log(systemInfo);
@@ -79,6 +100,17 @@ class PrometheusApp extends Homey.App {
         server.get("/metrics", respond);
         server.get("/prometheus/metrics", respond);
         server.listen(9414);
+    }
+
+    async updatePresence() {
+        let api = await this.getApi();
+        for(let uid in user_map) {
+            console.log("updatePresence");
+            console.log(api.presence)
+            let presence = await api.presence.getPresent({id:uid});
+            console.log("Presence:");
+            console.log(presence);
+        }
     }
 
     async updateDeviceList() {
