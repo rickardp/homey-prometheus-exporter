@@ -121,7 +121,7 @@ class PrometheusApp extends Homey.App {
         
         device_labels = {}
         for(let key in gauge_device) {
-            gauge_device[key].reset()
+            gauge_device[key].reset();
         }
 
     	for(let devId in devices) {
@@ -200,14 +200,14 @@ class PrometheusApp extends Homey.App {
           gauge_cpu.labels(time).set(systemInfo.cpus[0].times[time]);
         }
 
-        let storageInfo = await api.system.getStorageStats();
+        let storageInfo = await api.system.getStorageInfo();
         gauge_storage_total.set(storageInfo.total);
         gauge_storage_free.set(storageInfo.free);
         for(let app in storageInfo.types) {
             gauge_storage_used.labels(app).set(storageInfo.types[app].size);
         }
 
-        let memoryInfo = await api.system.getMemoryStats();
+        let memoryInfo = await api.system.getMemoryInfo();
         gauge_memory_total.set(memoryInfo.total);
         gauge_memory_free.set(memoryInfo.free);
         gauge_memory_swap.set(memoryInfo.swap);
