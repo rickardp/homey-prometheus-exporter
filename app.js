@@ -146,9 +146,21 @@ class PrometheusApp extends Homey.App {
         if(!(devId in device_labels)) {
             // Report initial state
             device_labels[devId] = labels; // Need to do this before reportState
-            let s = dev.state;
-            for(let sn in s) {
-                this.reportState(devId, sn, s[sn]);
+            let s = dev.capabilities;
+            console.log("initial state for " + dev.name + " is " + s);
+            for(let sn of s) {
+                if(!dev.capabilitiesObj) continue;
+                let capId = dev.capabilitiesObj[sn].id;
+                var capInst = null;
+                console.log ("  " + sn + " is " + capId);
+                let self = this;
+                function onCapChg(val) {
+                   console.log(" dev cap " + dev.name + " "+ sn + " is " + val);
+                   self.reportState(devId, sn, val);
+                }
+                capInst = dev.makeCapabilityInstance(capId, onCapChg);
+                //this.reportState(devId, sn, val);
+                onCapChg(capInst.value);
             }
         } else {
             device_labels[devId] = labels; // Update labels in case device was renamed/moved
