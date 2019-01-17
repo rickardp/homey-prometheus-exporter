@@ -140,7 +140,7 @@ class PrometheusApp extends Homey.App {
         dev.on('$update', (self) => {
             console.log("Device updated: " + devId)
         });
-        var labels = getZoneLabels(dev.zone.id, zones);
+        var labels = getZoneLabels(dev.zone, zones);
         labels.device = devId;
         labels.name = dev.name;
         if(!(devId in device_labels)) {
