@@ -23,7 +23,8 @@ const gauge_load_average_15 = new client.Gauge({ name: 'homey_load_average_15', 
 const gauge_tx_total = new client.Gauge({ name: 'homey_tx_total', help: 'Total sent packets', labelNames: ['node', 'device', 'name', 'zone', 'zones'] });
 const gauge_tx_error = new client.Gauge({ name: 'homey_tx_error', help: 'Failed sent packets', labelNames: ['node', 'device', 'name', 'zone', 'zones'] });
 const gauge_rx_total = new client.Gauge({ name: 'homey_rx_total', help: 'Total received packets', labelNames: ['node', 'device', 'name', 'zone', 'zones'] });
-const gauge_presence = new client.Gauge({ name: 'homey_presence', help: 'User presence', labelNames: ['email'] });
+const gauge_present = new client.Gauge({ name: 'homey_user_present', help: 'User is at home', labelNames: ['email'] });
+const gauge_asleep = new client.Gauge({ name: 'homey_user_asleep', help: 'User is at asleep', labelNames: ['email'] });
 let gauge_device = {}
 var device_labels = {}
 let zwave_devices = {}
@@ -74,26 +75,18 @@ class PrometheusApp extends Homey.App {
 
         console.log("Updating user map");
         let users = await api.users.getUsers();
+        let updatePresence = this.updatePresence;
         for(let uid in users) {
             console.log("User " + uid + " is " + users[uid].email);
             user_map[uid] = users[uid].email;
+            users[uid].on('$update', function(self) {
+                console.log("User " + self.email + "changed, updating presence");
+                updatePresence(users);
+            });
         }
+        updatePresence(users);
 
-        await this.updatePresence();
-        console.log("Subscribing to presence");
-        api.presence.on('presence', state => {
-            console.log('Presence changed')
-            let uid = state.user_id;
-            let present = state.present;
-
-            console.log("Presence for " + user_map[uid] + " changed to " + present);
-            this.updatePresence();
-        });
-        //boot = new Date(Date.parse(x.date) - x.uptime * 1000)
-        //let allDevices = await api.devices.getDevices();
-        //console.log(systemInfo);
-
-	let respond = function(request, response) {
+	    let respond = function(request, response) {
             response.contentType("text/plain; charset=utf-8");
             response.end(client.register.metrics());
         };
@@ -103,14 +96,13 @@ class PrometheusApp extends Homey.App {
         server.listen(9414);
     }
 
-    async updatePresence() {
-        let api = await this.getApi();
+    async updatePresence(users) {
         for(let uid in user_map) {
-            console.log("updatePresence");
-            console.log(api.presence)
-            let presence = await api.presence.getPresent({id:uid});
-            console.log("Presence:");
-            console.log(presence);
+            let present = users[uid].present;
+            let asleep = users[uid].asleep;
+            console.log("User " + users[uid].email + ": present " + present + " asleep " + asleep);
+            gauge_present.labels(users[uid].email).set(present ? 1 : 0)
+            gauge_asleep.labels(users[uid].email).set(asleep ? 1 : 0)
         }
     }
 
