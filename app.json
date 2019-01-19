@@ -8,6 +8,14 @@
     "description": {
         "en": "Metrics exporter for prometheus.io"
     },
+    "contributing": {
+		"donate": {
+		  "paypal": {
+			"username": "rickardly"
+		  }
+		}
+      },
+    "homeyCommunityTopicId": 7375,
     "category": "tools",
     "version": "0.2.0",
     "compatibility": ">=2.0.0",
