@@ -62,7 +62,6 @@ class PrometheusApp extends Homey.App {
 
 		// Adding notifiers
 		console.log("Subscribing to device changes")
-		await api.devices.subscribe();
         api.devices.on('device.create', id => {
             console.log('Adding new device ' + id)
             this.updateDeviceList();
@@ -81,7 +80,6 @@ class PrometheusApp extends Homey.App {
 
         await this.updatePresence();
         console.log("Subscribing to presence");
-        await api.presence.subscribe();
         api.presence.on('presence', state => {
             console.log('Presence changed')
             let uid = state.user_id;
