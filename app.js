@@ -158,7 +158,7 @@ class PrometheusApp extends Homey.App {
                 capInsts.push(capInst);
                 onCapChg(capInst.value);
             }
-            device_cap_insts[devId] = device_cap_insts; // Register so that we can dispose when device renamed/moved
+            device_cap_insts[devId] = capInsts; // Register so that we can dispose when device renamed/moved
         } else {
             device_labels[devId] = labels; // Update labels in case device was renamed/moved
         }
