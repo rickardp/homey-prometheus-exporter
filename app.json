@@ -9,7 +9,7 @@
         "en": "Metrics exporter for prometheus.io"
     },
     "category": "tools",
-    "version": "0.1.4",
+    "version": "0.2.0",
     "compatibility": ">=2.0.0",
     "author": {
         "name": "Rickard",
