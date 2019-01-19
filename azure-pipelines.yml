@@ -20,8 +20,8 @@ steps:
   inputs:
     SonarCloud: SonarCloud
     organization: rickardp-github
-    projectKey: $(ProjectKey)
-    projectName: rickardp_homey-prometheus-exporter
+    projectKey: rickardp_homey-prometheus-exporter
+    projectName: homey-prometheus-exporter
     projectVersion: '$(Build.BuildNumber)'
     extraProperties: |
      # Additional properties that will be passed to the scanner, 
