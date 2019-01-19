@@ -45,7 +45,7 @@ class PrometheusApp extends Homey.App {
 
     async getDevices() {
 		const api = await this.getApi();
-		allDevices = await api.devices.getDevices();
+		let allDevices = await api.devices.getDevices();
 		return allDevices;
 	  }
 
