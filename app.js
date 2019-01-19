@@ -55,7 +55,7 @@ class PrometheusApp extends Homey.App {
         const bootTime = appStartTime - 1000 * systemInfo.uptime;
 
         gauge_app_start_time.set(appStartTime)
-        gauge_boot_time.labels(systemInfo.homey_version).set(bootTime)
+        gauge_boot_time.labels(systemInfo.homeyVersion).set(bootTime)
 
         await this.updateDeviceList();
         await this.updateSystemInfo();
