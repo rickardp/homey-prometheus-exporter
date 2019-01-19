@@ -1,4 +1,6 @@
-# Prometheus
+# Prometheus exporter for Athom Homey
+
+![Build status](https://dev.azure.com/github-rickard/homey-prometheus-exporter/_apis/build/status/rickardp.homey-prometheus-exporter?branchName=master&label=build)
 
 Prometheus exporter for Homey.
 
