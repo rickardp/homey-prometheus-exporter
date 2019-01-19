@@ -149,7 +149,7 @@ class PrometheusApp extends Homey.App {
                 let self = this;
                 function onCapChg(val) {
                     if(val) {
-                        console.log(" dev cap " + dev.name + " "+ sn + " is " + val);
+                        //console.log(" dev cap " + dev.name + " "+ sn + " is " + val);
                         self.reportState(devId, sn, val);
                     }
                 }
