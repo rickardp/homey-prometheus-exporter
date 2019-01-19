@@ -28,6 +28,7 @@ let gauge_device = {}
 var device_labels = {}
 let zwave_devices = {}
 let user_map = {}
+let device_cap_insts = {}
 
 // Uncomment the line above to enable the inspector (to use Chrome as a debugger)
 // (execution will stop until a debugger is attached)
@@ -147,21 +148,25 @@ class PrometheusApp extends Homey.App {
             // Report initial state
             device_labels[devId] = labels; // Need to do this before reportState
             let s = dev.capabilities;
-            console.log("initial state for " + dev.name + " is " + s);
+            let capInsts = []
             for(let sn of s) {
                 if(!dev.capabilitiesObj) continue;
                 let capId = dev.capabilitiesObj[sn].id;
+                if(!capId) continue;
                 var capInst = null;
-                console.log ("  " + sn + " is " + capId);
                 let self = this;
                 function onCapChg(val) {
-                   console.log(" dev cap " + dev.name + " "+ sn + " is " + val);
-                   self.reportState(devId, sn, val);
+                    if(val) {
+                        console.log(" dev cap " + dev.name + " "+ sn + " is " + val);
+                        self.reportState(devId, sn, val);
+                    }
                 }
                 capInst = dev.makeCapabilityInstance(capId, onCapChg);
-                //this.reportState(devId, sn, val);
+                // Report initial state
+                capInsts.push(capInst);
                 onCapChg(capInst.value);
             }
+            device_cap_insts[devId] = device_cap_insts; // Register so that we can dispose when device renamed/moved
         } else {
             device_labels[devId] = labels; // Update labels in case device was renamed/moved
         }
