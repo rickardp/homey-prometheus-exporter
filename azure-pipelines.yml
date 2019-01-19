@@ -16,21 +16,26 @@ steps:
   displayName: 'Install Node.js'
 
 - task: SonarSource.sonarcloud.14d9cde6-c1da-4d55-aa01-2965cd301255.SonarCloudPrepare@1
-  displayName: Prepare analysis on SonarCloud
+  displayName: 'Prepare analysis on SonarCloud'
   inputs:
     SonarCloud: SonarCloud
-    organization: rickardp-github
-    projectKey: rickardp_homey-prometheus-exporter
-    projectName: homey-prometheus-exporter
-    projectVersion: '$(Build.BuildNumber)'
+    organization: 'rickardp-github'
+    scannerMode: CLI
+    configMode: manual
+    cliProjectKey: 'rickardp_homey-prometheus-exporter'
     extraProperties: |
-     # Additional properties that will be passed to the scanner, 
-     # Put one key=value per line, example:
-     sonar.exclusions=**/bower_components/**/*,**/node_modules/**/*,**/Scripts/lib/**/*
+     sonar.exclusions=**/node_modules/**/*
      sonar.branch.name=$(Build.SourceBranchName)
+
 
 - script: |
     npm install -g athom-cli
     athom app validate -l publish
     athom app build
   displayName: 'Build athom app'
+
+- task: SonarSource.sonarcloud.ce096e50-6155-4de8-8800-4221aaeed4a1.SonarCloudAnalyze@1
+  displayName: 'Run Code Analysis'
+
+- task: SonarSource.sonarcloud.38b27399-a642-40af-bb7d-9971f69712e8.SonarCloudPublish@1
+  displayName: 'Publish Quality Gate Result'
