@@ -1,6 +1,6 @@
 # Prometheus exporter for Athom Homey
 
-![Build status](https://dev.azure.com/github-rickard/homey-prometheus-exporter/_apis/build/status/rickardp.homey-prometheus-exporter?branchName=master&label=build) [![Sonarcloud Status](https://sonarcloud.io/api/project_badges/measure?project=rickardp_homey-prometheus-exporter&metric=alert_status)](https://sonarcloud.io/dashboard?id=rickardp_homey-prometheus-exporter)
+[![Build status](https://dev.azure.com/github-rickard/homey-prometheus-exporter/_apis/build/status/rickardp.homey-prometheus-exporter?branchName=master&label=build)](https://dev.azure.com/github-rickard/homey-prometheus-exporter/_build?definitionId=1) [![Sonarcloud Status](https://sonarcloud.io/api/project_badges/measure?project=rickardp_homey-prometheus-exporter&metric=alert_status)](https://sonarcloud.io/dashboard?id=rickardp_homey-prometheus-exporter)
 
 Prometheus exporter for Homey.
 
