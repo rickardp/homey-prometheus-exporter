@@ -127,6 +127,12 @@ class PrometheusApp extends Homey.App {
         for(let key in gauge_device) {
             gauge_device[key].reset();
         }
+        for(let devId in device_cap_insts) {
+            for(let capInst of device_cap_insts[devId]) {
+                capInst.destroy();
+            }
+        }
+        device_cap_insts = {}
 
     	for(let devId in devices) {
     		this.registerDevice(devId, devices[devId], zones);
