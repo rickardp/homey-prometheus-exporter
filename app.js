@@ -29,7 +29,8 @@ let gauge_device = {}
 var device_labels = {}
 let zwave_devices = {}
 let user_map = {}
-let device_cap_insts = {}
+var device_cap_insts = {}
+var deviceListNeedsUpdate = false;
 
 // Uncomment the line above to enable the inspector (to use Chrome as a debugger)
 // (execution will stop until a debugger is attached)
@@ -59,6 +60,7 @@ class PrometheusApp extends Homey.App {
         gauge_app_start_time.set(appStartTime)
         gauge_boot_time.labels(systemInfo.homeyVersion).set(bootTime)
 
+        deviceListNeedsUpdate = true;
         await this.updateDeviceList();
         await this.updateSystemInfo();
 
@@ -66,11 +68,18 @@ class PrometheusApp extends Homey.App {
 		console.log("Subscribing to device changes")
         api.devices.on('device.create', id => {
             console.log('Adding new device ' + id)
-            this.updateDeviceList();
+            deviceListNeedsUpdate = true;
+            setTimeout(this.updateDeviceList.bind(this), 1000);
         });
         api.devices.on('device.update', id => {
             console.log('Updating device ' + id)
-            this.updateDeviceList();
+            deviceListNeedsUpdate = true;
+            setTimeout(this.updateDeviceList.bind(this), 1000);
+        });
+        api.devices.on('device.delete', id => {
+            console.log('Deleting device ' + id)
+            deviceListNeedsUpdate = true;
+            setTimeout(this.updateDeviceList.bind(this), 1000);
         });
 
         console.log("Updating user map");
@@ -107,6 +116,8 @@ class PrometheusApp extends Homey.App {
     }
 
     async updateDeviceList() {
+        if(!deviceListNeedsUpdate) return;
+        deviceListNeedsUpdate = false;
         this.log('Update device list');
         let api = await this.getApi();
     	let zones = await api.zones.getZones();
