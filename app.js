@@ -124,15 +124,6 @@ class PrometheusApp extends Homey.App {
 
     registerDevice(devId, dev, zones) {
         console.log("Registering device " + devId);
-        dev.on('$state', (state, capability) => {
-            console.log("Device state changed: " + state + " of " + devId)
-            for(let st in state) {
-                this.reportState(devId, st, state[st]);
-            }
-        });
-        dev.on('$update', (self) => {
-            console.log("Device updated: " + devId)
-        });
         var labels = getZoneLabels(dev.zone, zones);
         labels.device = devId;
         labels.name = dev.name;
