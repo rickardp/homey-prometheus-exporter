@@ -151,6 +151,7 @@ class PrometheusApp extends Homey.App {
             let capInsts = []
             for(let sn of s) {
                 if(!dev.capabilitiesObj) continue;
+                if(!dev.capabilitiesObj[sn]) continue;
                 let capId = dev.capabilitiesObj[sn].id;
                 if(!capId) continue;
                 var capInst = null;
