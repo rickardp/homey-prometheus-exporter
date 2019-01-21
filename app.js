@@ -192,7 +192,7 @@ class PrometheusApp extends Homey.App {
         // Make sure state names are valid (e.g. remove dots in names)
         statename = statename.replace(/[^A-Za-z0-9_]/g, '_');
 
-        console.log("State changed for " + devId + ", " + statename);
+        //console.log("State changed for " + devId + ", " + statename);
         let key = "homey_device_" + statename;
         if(!(key in gauge_device)) {
         	gauge_device[key] = new client.Gauge({ name: 'homey_device_' + statename, help: 'State ' + statename, labelNames: ['device', 'name', 'zone', 'zones'] });
@@ -236,8 +236,6 @@ class PrometheusApp extends Homey.App {
         if(Object.keys(zwave_devices).length > 0) {
             let zwave = await api.zwave.getState();
             if(zwave && zwave.zw_state && zwave.zw_state.stats) {
-                //console.log(zwave)
-                console.log("Checking z-wave status")
                 for(let zwn in zwave_devices) {
                     let net = zwave.zw_state.stats['node_' + zwn + '_network'];
                     let labels = device_labels[zwave_devices[zwn]];
