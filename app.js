@@ -206,6 +206,7 @@ class PrometheusApp extends Homey.App {
     }
 
     async updateSystemInfo() {
+        setTimeout(this.updateSystemInfo.bind(this), 30000);
         let api = await this.getApi();
         let systemInfo = await api.system.getInfo();
 
@@ -247,8 +248,6 @@ class PrometheusApp extends Homey.App {
                 }
             }
         }
-        
-        setTimeout(this.updateSystemInfo.bind(this), 30000);
     }
 }
 
