@@ -157,7 +157,7 @@ class PrometheusApp extends Homey.App {
                 var capInst = null;
                 let self = this;
                 function onCapChg(val) {
-                    if(val) {
+                    if(val !== null && val !== undefined) {
                         //console.log(" dev cap " + dev.name + " "+ sn + " is " + val);
                         self.reportState(devId, sn, val);
                     }
