@@ -68,4 +68,3 @@ Browse to `http://<homey_ip>:9414/metrics` and make sure there is a response.
 
 There is currently no configuration needed for this app.
 
-
