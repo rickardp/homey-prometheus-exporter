@@ -239,30 +239,31 @@ class PrometheusApp extends Homey.App {
         for(let time in systemInfo.cpus[0].times) {
           gauge_cpu.labels(time).set(systemInfo.cpus[0].times[time]);
         }
-	try {
-            let storageInfo = await api.system.getStorageInfo();
-            gauge_storage_total.set(storageInfo.total);
-            gauge_storage_free.set(storageInfo.free);
-            for(let app in storageInfo.types) {
-                gauge_storage_used.labels(app).set(storageInfo.types[app].size);
-            }
-	}
-	catch(err) {
-  	    console.log("Error getting storage info: " + err.message);
-	}
 
-	try {
-            let memoryInfo = await api.system.getMemoryInfo();
-            gauge_memory_total.set(memoryInfo.total);
-            gauge_memory_free.set(memoryInfo.free);
-            gauge_memory_swap.set(memoryInfo.swap);
-            for(let app in memoryInfo.types) {
-                gauge_memory_used.labels(app).set(memoryInfo.types[app].size);
-            }
-	}
-	catch(err) {
-  	    console.log("Error getting memory info: " + err.message);
-	}
+        try {
+                let storageInfo = await api.system.getStorageInfo();
+                gauge_storage_total.set(storageInfo.total);
+                gauge_storage_free.set(storageInfo.free);
+                for(let app in storageInfo.types) {
+                    gauge_storage_used.labels(app).set(storageInfo.types[app].size);
+                }
+        }
+        catch(err) {
+            console.log("Error getting storage info: " + err.message);
+        }
+
+        try {
+                let memoryInfo = await api.system.getMemoryInfo();
+                gauge_memory_total.set(memoryInfo.total);
+                gauge_memory_free.set(memoryInfo.free);
+                gauge_memory_swap.set(memoryInfo.swap);
+                for(let app in memoryInfo.types) {
+                    gauge_memory_used.labels(app).set(memoryInfo.types[app].size);
+                }
+        }
+        catch(err) {
+            console.log("Error getting memory info: " + err.message);
+        }
 
         if(Object.keys(zwave_devices).length > 0) {
             let zwave = await api.zwave.getState();
