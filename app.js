@@ -23,8 +23,8 @@ const gauge_load_average_15 = new client.Gauge({ name: 'homey_load_average_15', 
 const gauge_tx_total = new client.Gauge({ name: 'homey_tx_total', help: 'Total sent packets', labelNames: ['node', 'device', 'name', 'zone', 'zones'] });
 const gauge_tx_error = new client.Gauge({ name: 'homey_tx_error', help: 'Failed sent packets', labelNames: ['node', 'device', 'name', 'zone', 'zones'] });
 const gauge_rx_total = new client.Gauge({ name: 'homey_rx_total', help: 'Total received packets', labelNames: ['node', 'device', 'name', 'zone', 'zones'] });
-const gauge_present = new client.Gauge({ name: 'homey_user_present', help: 'User is at home', labelNames: ['email'] });
-const gauge_asleep = new client.Gauge({ name: 'homey_user_asleep', help: 'User is at asleep', labelNames: ['email'] });
+const gauge_present = new client.Gauge({ name: 'homey_user_present', help: 'User is at home', labelNames: ['athomId', 'name'] });
+const gauge_asleep = new client.Gauge({ name: 'homey_user_asleep', help: 'User is at asleep', labelNames: ['athomId', 'name'] });
 let gauge_device = {}
 var device_labels = {}
 let zwave_devices = {}
@@ -86,10 +86,10 @@ class PrometheusApp extends Homey.App {
         let users = await api.users.getUsers();
         let updatePresence = this.updatePresence;
         for(let uid in users) {
-            console.log("User " + uid + " is " + users[uid].email);
-            user_map[uid] = users[uid].email;
+            console.log("User " + uid + " is " + users[uid].athomId);
+            user_map[uid] = users[uid].athomId;
             users[uid].on('$update', function(self) {
-                console.log("User " + self.email + "changed, updating presence");
+                console.log("User " + self.athomId + "changed, updating presence");
                 updatePresence(users);
             });
         }
@@ -109,9 +109,9 @@ class PrometheusApp extends Homey.App {
         for(let uid in user_map) {
             let present = users[uid].present;
             let asleep = users[uid].asleep;
-            console.log("User " + users[uid].email + ": present " + present + " asleep " + asleep);
-            gauge_present.labels(users[uid].email).set(present ? 1 : 0)
-            gauge_asleep.labels(users[uid].email).set(asleep ? 1 : 0)
+            console.log("User " + users[uid].athomId + ": present " + present + " asleep " + asleep);
+            gauge_present.labels(users[uid].athomId, users[uid].name).set(present ? 1 : 0)
+            gauge_asleep.labels(users[uid].athomId, users[uid].name).set(asleep ? 1 : 0)
         }
     }
 

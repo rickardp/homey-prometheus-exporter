@@ -17,8 +17,9 @@
       },
     "homeyCommunityTopicId": 7375,
     "category": "tools",
-    "version": "0.2.4",
+    "version": "0.2.5",
     "compatibility": ">=2.0.0",
+    "brandColor": "#e6522c",
     "author": {
         "name": "Rickard",
         "email": "athom@evolviq.com"
