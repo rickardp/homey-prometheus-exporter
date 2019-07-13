@@ -1,6 +1,6 @@
 {
   "name": "prometheus.io",
-  "version": "0.2.1",
+  "version": "0.2.6",
   "description": "Prometheus exporter",
   "main": "app.js",
   "repository": "https://github.com/rickardp/homey-prometheus-exporter",

@@ -25,6 +25,7 @@ const gauge_tx_error = new client.Gauge({ name: 'homey_tx_error', help: 'Failed 
 const gauge_rx_total = new client.Gauge({ name: 'homey_rx_total', help: 'Total received packets', labelNames: ['node', 'device', 'name', 'zone', 'zones'] });
 const gauge_present = new client.Gauge({ name: 'homey_user_present', help: 'User is at home', labelNames: ['athomId', 'name'] });
 const gauge_asleep = new client.Gauge({ name: 'homey_user_asleep', help: 'User is at asleep', labelNames: ['athomId', 'name'] });
+const gauge_variable = new client.Gauge({ name: 'homey_variable_value', help: 'Variable value', labelNames: ['name'] });
 let gauge_device = {}
 var device_labels = {}
 let zwave_devices = {}
@@ -95,6 +96,13 @@ class PrometheusApp extends Homey.App {
         }
         updatePresence(users);
 
+        // Variables
+        api.logic.on('variable.update', this.updateVariable.bind(this));
+        let vars = await api.logic.getVariables();
+        for(let varName in vars) {
+            this.updateVariable(vars[varName]);
+        }
+
 	    let respond = function(request, response) {
             response.contentType("text/plain; charset=utf-8");
             response.end(client.register.metrics());
@@ -103,6 +111,19 @@ class PrometheusApp extends Homey.App {
         server.get("/metrics", respond);
         server.get("/prometheus/metrics", respond);
         server.listen(9414);
+    }
+
+    updateVariable(variable) {
+        var value
+        if(variable.type === "number") {
+            value = variable.value;
+        } else if(variable.type === "boolean") {
+            value = variable.value ? 1 : 0;
+        } else {
+            return; // Cannot represent strings in Prometheus
+        }
+        if(value === undefined) return
+        gauge_variable.labels(variable.name).set(value)
     }
 
     async updatePresence(users) {
