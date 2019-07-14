@@ -23,6 +23,8 @@ const gauge_load_average_15 = new client.Gauge({ name: 'homey_load_average_15', 
 const gauge_tx_total = new client.Gauge({ name: 'homey_tx_total', help: 'Total sent packets', labelNames: ['node', 'device', 'name', 'zone', 'zones'] });
 const gauge_tx_error = new client.Gauge({ name: 'homey_tx_error', help: 'Failed sent packets', labelNames: ['node', 'device', 'name', 'zone', 'zones'] });
 const gauge_rx_total = new client.Gauge({ name: 'homey_rx_total', help: 'Total received packets', labelNames: ['node', 'device', 'name', 'zone', 'zones'] });
+const counter_online_time = new client.Counter({ name: 'homey_device_online_time_seconds', help: 'Seconds of time online for the device', labelNames: ['node', 'device', 'name', 'zone', 'zones'] });
+const counter_online_count = new client.Counter({ name: 'homey_device_online_count', help: 'Number of time device went online', labelNames: ['node', 'device', 'name', 'zone', 'zones'] });
 const gauge_present = new client.Gauge({ name: 'homey_user_present', help: 'User is at home', labelNames: ['athomId', 'name'] });
 const gauge_asleep = new client.Gauge({ name: 'homey_user_asleep', help: 'User is at asleep', labelNames: ['athomId', 'name'] });
 const gauge_variable = new client.Gauge({ name: 'homey_variable_value', help: 'Variable value', labelNames: ['name'] });
@@ -32,13 +34,15 @@ const gauge_weather_pressure = new client.Gauge({ name: 'homey_weather_pressure'
 let gauge_device = {}
 var device_labels = {}
 let zwave_devices = {}
+let zigbee_devices = {}
+let online_devices = {}
 let user_map = {}
 var device_cap_insts = {}
 var deviceListNeedsUpdate = false;
 
 // Uncomment the line above to enable the inspector (to use Chrome as a debugger)
 // (execution will stop until a debugger is attached)
-//require('inspector').open(9229, '0.0.0.0', true);
+require('inspector').open(9229, '0.0.0.0', true);
 
 class PrometheusApp extends Homey.App {
     getApi() {
@@ -212,8 +216,15 @@ class PrometheusApp extends Homey.App {
         if(dev.flags.includes("zwave")) {
             let zwaveId = dev.settings.zw_node_id;
             if(zwaveId) {
-                console.log("Device " + dev.name + " has zwave node id " + zwaveId);
+                console.log("Device " + dev.name + " has Z-Wave node id " + zwaveId);
                 zwave_devices[zwaveId] = devId
+            }
+        }
+        if(dev.flags.includes("zigbee")) {
+            let zigbeeId = dev.settings.zb_device_id;
+            if(zigbeeId) {
+                console.log("Device " + dev.name + " has ZigBee device id " + zigbeeId);
+                zigbee_devices[zigbeeId] = devId
             }
         }
     }
@@ -258,41 +269,100 @@ class PrometheusApp extends Homey.App {
         }
 
         try {
-                let storageInfo = await api.system.getStorageInfo();
-                gauge_storage_total.set(storageInfo.total);
-                gauge_storage_free.set(storageInfo.free);
-                for(let app in storageInfo.types) {
-                    gauge_storage_used.labels(app).set(storageInfo.types[app].size);
-                }
+            let storageInfo = await api.system.getStorageInfo();
+            gauge_storage_total.set(storageInfo.total);
+            gauge_storage_free.set(storageInfo.free);
+            for(let app in storageInfo.types) {
+                gauge_storage_used.labels(app).set(storageInfo.types[app].size);
+            }
         }
         catch(err) {
             console.log("Error getting storage info: " + err.message);
         }
 
         try {
-                let memoryInfo = await api.system.getMemoryInfo();
-                gauge_memory_total.set(memoryInfo.total);
-                gauge_memory_free.set(memoryInfo.free);
-                gauge_memory_swap.set(memoryInfo.swap);
-                for(let app in memoryInfo.types) {
-                    gauge_memory_used.labels(app).set(memoryInfo.types[app].size);
-                }
+            let memoryInfo = await api.system.getMemoryInfo();
+            gauge_memory_total.set(memoryInfo.total);
+            gauge_memory_free.set(memoryInfo.free);
+            gauge_memory_swap.set(memoryInfo.swap);
+            for(let app in memoryInfo.types) {
+                gauge_memory_used.labels(app).set(memoryInfo.types[app].size);
+            }
         }
         catch(err) {
             console.log("Error getting memory info: " + err.message);
         }
+    }
 
-        if(Object.keys(zwave_devices).length > 0) {
-            let zwave = await api.zwave.getState();
-            if(zwave && zwave.zw_state && zwave.zw_state.stats) {
-                for(let zwn in zwave_devices) {
-                    let net = zwave.zw_state.stats['node_' + zwn + '_network'];
-                    let labels = device_labels[zwave_devices[zwn]];
-                    if(net && labels) {
-                        gauge_tx_total.labels(zwn, labels.device, labels.name, labels.zone, labels.zones).set(net.tx);
-                        gauge_tx_error.labels(zwn, labels.device, labels.name, labels.zone, labels.zones).set(net.tx_err);
-                        gauge_rx_total.labels(zwn, labels.device, labels.name, labels.zone, labels.zones).set(net.rx);
+    zwaveStateChange(zwave) {
+        if(zwave && zwave.zw_state && zwave.zw_state.stats && Object.keys(zwave_devices).length > 0) {
+            let ts = zwave.$lastUpdated * 1e-3;
+            if(!ts) return;
+            for(let zwn in zwave_devices) {
+                let net = zwave.zw_state.stats['node_' + zwn + '_network'];
+                let labels = device_labels[zwave_devices[zwn]];
+                if(!labels) continue;
+
+                if(net) {
+                    gauge_tx_total.labels(zwn, labels.device, labels.name, labels.zone, labels.zones).set(net.tx);
+                    gauge_tx_error.labels(zwn, labels.device, labels.name, labels.zone, labels.zones).set(net.tx_err);
+                    gauge_rx_total.labels(zwn, labels.device, labels.name, labels.zone, labels.zones).set(net.rx);
+                }
+                let online = zwave.zw_state.stats['node_' + zwn + '_online'];
+                if(online === undefined) online = true;
+
+                var timeOnline = 0.0;
+                let prevOnline = online_devices[zwave_devices[zwn]];
+                if(prevOnline) {
+                   timeOnline = ts - prevOnline; 
+                }
+
+                if(online) {
+                    online_devices[zwave_devices[zwn]] = ts;
+                    if(prevOnline === null) {
+                        counter_online_count.labels(zwn, labels.device, labels.name, labels.zone, labels.zones).inc()
                     }
+                } else {
+                    online_devices[zwave_devices[zwn]] = null;
+                }
+                if(timeOnline > 0) {
+                    counter_online_time.labels(zwn, labels.device, labels.name, labels.zone, labels.zones).inc(timeOnline)
+                }
+            }
+        }
+    }
+
+    zigbeeStateChange(zigbee) {
+        console.log("ZigBee state chg");
+        if(zigbee && zigbee.zigbee_state && zigbee.zigbee_state.devices && Object.keys(zigbee_devices).length > 0) {
+            let ts = zigbee.$lastUpdated * 1e-3;
+            if(!ts) return;
+            for(let node of zigbee.zigbee_state.devices) {
+                if(!node.deviceId) continue;
+                let zbd = zigbee_devices[node.deviceId];
+                if(!zbd) continue;
+
+                let labels = device_labels[zbd];
+                if(!labels) continue;
+                
+                let online = node.status !== "offline";
+
+                var timeOnline = 0.0;
+                let prevOnline = online_devices[zbd];
+                if(prevOnline) {
+                   timeOnline = ts - prevOnline; 
+                }
+
+                if(online) {
+                    online_devices[zbd] = ts;
+                    if(prevOnline === null) {
+                        counter_online_count.labels(node.deviceId, labels.device, labels.name, labels.zone, labels.zones).inc()
+                    }
+                } else {
+                    online_devices[zbd] = null;
+                }
+                if(timeOnline > 0) {
+                    counter_online_time.labels(node.deviceId, labels.device, labels.name, labels.zone, labels.zones).inc(timeOnline)
                 }
             }
         }
