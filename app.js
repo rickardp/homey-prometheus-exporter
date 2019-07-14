@@ -204,6 +204,7 @@ class PrometheusApp extends Homey.App {
                         self.reportState(devId, sn, val);
                     }
                 }
+                dev.setMaxListeners(1000); // Silence incorrect memory leak warning if we listen to many devices
                 capInst = dev.makeCapabilityInstance(capId, onCapChg);
                 // Report initial state
                 capInsts.push(capInst);
