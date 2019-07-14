@@ -26,6 +26,9 @@ const gauge_rx_total = new client.Gauge({ name: 'homey_rx_total', help: 'Total r
 const gauge_present = new client.Gauge({ name: 'homey_user_present', help: 'User is at home', labelNames: ['athomId', 'name'] });
 const gauge_asleep = new client.Gauge({ name: 'homey_user_asleep', help: 'User is at asleep', labelNames: ['athomId', 'name'] });
 const gauge_variable = new client.Gauge({ name: 'homey_variable_value', help: 'Variable value', labelNames: ['name'] });
+const gauge_weather_temperature = new client.Gauge({ name: 'homey_weather_temperature', help: 'Temperature (Weather API)', labelNames: ['city', 'country'] });
+const gauge_weather_humidity = new client.Gauge({ name: 'homey_weather_humidity', help: 'Humidity (Weather API)', labelNames: ['city', 'country'] });
+const gauge_weather_pressure = new client.Gauge({ name: 'homey_weather_pressure', help: 'Pressure (Weather API)', labelNames: ['city', 'country'] });
 let gauge_device = {}
 var device_labels = {}
 let zwave_devices = {}
@@ -103,6 +106,14 @@ class PrometheusApp extends Homey.App {
             this.updateVariable(vars[varName]);
         }
 
+        // Weather
+        api.weather.on('weather', this.updateWeather.bind(this));
+        let weather = await api.weather.getWeather();
+        this.updateWeather(weather);
+
+        api.zwave.on('state', this.zwaveStateChange.bind(this));
+        api.zigBee.on('state', this.zigbeeStateChange.bind(this));
+
 	    let respond = function(request, response) {
             response.contentType("text/plain; charset=utf-8");
             response.end(client.register.metrics());
@@ -124,6 +135,12 @@ class PrometheusApp extends Homey.App {
         }
         if(value === undefined) return
         gauge_variable.labels(variable.name).set(value)
+    }
+
+    updateWeather(weather) {
+        gauge_weather_humidity.labels(weather.city, weather.country).set(weather.humidity)
+        gauge_weather_pressure.labels(weather.city, weather.country).set(weather.pressure * 1e3)
+        gauge_weather_temperature.labels(weather.city, weather.country).set(weather.temperature)
     }
 
     async updatePresence(users) {
