@@ -42,7 +42,7 @@ var deviceListNeedsUpdate = false;
 
 // Uncomment the line above to enable the inspector (to use Chrome as a debugger)
 // (execution will stop until a debugger is attached)
-require('inspector').open(9229, '0.0.0.0', true);
+//require('inspector').open(9229, '0.0.0.0', true);
 
 class PrometheusApp extends Homey.App {
     getApi() {
