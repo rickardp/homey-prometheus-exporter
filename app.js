@@ -45,9 +45,9 @@ var deviceListNeedsUpdate = false;
 //require('inspector').open(9229, '0.0.0.0', true);
 
 class PrometheusApp extends Homey.App {
-    getApi() {
+    async getApi() {
         if (!this.api) {
-            this.api = HomeyAPI.forCurrentHomey();
+            this.api = await HomeyAPI.forCurrentHomey();
         }
         return this.api;
     }
