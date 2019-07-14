@@ -297,9 +297,4 @@ function getZoneLabels(zoneId, zones) {
     }
 }
 
-
-function transformName(name) {
-    return name.toLowerCase().normalize("NFD").replace(/[ -]+/g, "_").replace(/[^a-z0-9_]/g, "")
-}
-
 module.exports = PrometheusApp;
