@@ -79,18 +79,18 @@ class PrometheusApp extends Homey.App {
 
             // Adding notifiers
             console.log("Subscribing to device changes")
-            api.devices.on('device.create', id => {
-                console.log('Adding new device ' + id)
+            api.devices.on('device.create', dev => {
+                console.log('Adding new device ' + dev.id + ' with name ' + dev.name + ' driver ' + dev.driverId)
                 deviceListNeedsUpdate = true;
                 setTimeout(this.updateDeviceList.bind(this), 1000);
             });
-            api.devices.on('device.update', id => {
-                console.log('Updating device ' + id)
+            api.devices.on('device.update', dev => {
+                console.log('Updating device ' + dev.id + ' with name ' + dev.name + ' driver ' + dev.driverId)
                 deviceListNeedsUpdate = true;
-                setTimeout(this.updateDeviceList.bind(this), 1000);
+                setTimeout(this.updateDeviceList.bind(this), 10000);
             });
-            api.devices.on('device.delete', id => {
-                console.log('Deleting device ' + id)
+            api.devices.on('device.delete', dev => {
+                console.log('Deleting device ' + dev.id + ' with name ' + dev.name + ' driver ' + dev.driverId)
                 deviceListNeedsUpdate = true;
                 setTimeout(this.updateDeviceList.bind(this), 1000);
             });

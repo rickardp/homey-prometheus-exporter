@@ -1,5 +1,8 @@
 {
   "0.2.6": {
     "en": "Variables, Weather API, Self-profiling metrics"
+  },
+  "0.2.7": {
+    "en": "Increased timeout on device change"
   }
 }
