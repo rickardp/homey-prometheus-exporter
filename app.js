@@ -132,8 +132,12 @@ class PrometheusApp extends Homey.App {
 
             server.get("/metrics", respond);
             server.get("/prometheus/metrics", respond);
-            server.listen(9414);
+            this.handle = server.listen(9414);
         }, 'init');
+    }
+ 
+    async onUninit() {
+      this.handle.close();
     }
 
     updateVariable(variable) {
