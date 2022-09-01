@@ -201,6 +201,8 @@ class PrometheusApp extends Homey.App {
             var labels = getZoneLabels(dev.zone, zones);
             labels.device = devId;
             labels.name = dev.name;
+            labels.class = dev.class ?? "unknown";
+            console.log(dev);
             if(!(devId in device_labels)) {
                 // Report initial state
                 device_labels[devId] = labels; // Need to do this before reportState
@@ -262,13 +264,13 @@ class PrometheusApp extends Homey.App {
             //console.log("State changed for " + devId + ", " + statename);
             let key = "homey_device_" + statename;
             if(!(key in gauge_device)) {
-                gauge_device[key] = new client.Gauge({ name: 'homey_device_' + statename, help: 'State ' + statename, labelNames: ['device', 'name', 'zone', 'zones'] });
+                gauge_device[key] = new client.Gauge({ name: 'homey_device_' + statename, help: 'State ' + statename, labelNames: ['device', 'name', 'zone', 'zones', 'class'] });
             }
             let labels = device_labels[devId]
             if(!labels) {
                 console.log("Cannot report unknown device " + devId);
             } else {
-                gauge_device[key].labels(labels.device, labels.name, labels.zone, labels.zones).set(value);
+                gauge_device[key].labels(labels.device, labels.name, labels.zone, labels.zones, labels.class).set(value);
             }
         }, 'deviceupdate', {device: devId});
     }
