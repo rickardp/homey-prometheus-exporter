@@ -3,11 +3,13 @@
   "id": "io.prometheus",
   "sdk": 2,
   "name": {
-      "en": "Prometheus.io"
+    "en": "Prometheus.io"
   },
-  "permissions": [ "homey:manager:api" ],
+  "permissions": [
+    "homey:manager:api"
+  ],
   "description": {
-      "en": "Metrics exporter for prometheus.io"
+    "en": "Metrics exporter for prometheus.io"
   },
   "bugs": {
     "url": "https://github.com/rickardp/homey-prometheus-exporter/issues/new/choose"
@@ -15,20 +17,20 @@
   "contributing": {
     "donate": {
       "paypal": {
-      "username": "rickardly"
+        "username": "rickardly"
       }
     }
   },
   "homeyCommunityTopicId": 7375,
   "category": "tools",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "compatibility": ">=2.0.0",
   "brandColor": "#e6522c",
   "author": {
-      "name": "Rickard",
-      "email": "athom@evolviq.com"
+    "name": "Rickard",
+    "email": "athom@evolviq.com"
   },
-  "images" : {
+  "images": {
     "small": "assets/images/small.png",
     "large": "assets/images/large.png"
   }
