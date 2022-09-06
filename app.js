@@ -144,7 +144,7 @@ class PrometheusApp extends Homey.App {
             } else {
                 return; // Cannot represent strings in Prometheus
             }
-            if(value === undefined) return
+            if(value === undefined || !variable.name) return
             gauge_variable.labels(variable.name).set(value)
         }, 'variable', {name: variable.name});
     }
@@ -177,7 +177,7 @@ class PrometheusApp extends Homey.App {
             let api = await this.getApi();
             let zones = await api.zones.getZones();
             let devices = await api.devices.getDevices();
-            
+
             device_labels = {}
             for(let key in gauge_device) {
                 gauge_device[key].reset();
@@ -453,7 +453,9 @@ function timeCode(func, action, labels) {
         if(!labels.zones) labels.zones = lbl
         const deltaNow = Date.now() - prevRealTime;
         const cpuUsage = process.cpuUsage(prevCpuTime);
-        counter_self_timer.labels('real', action, labels.device, labels.name, labels.zone, labels.zones).inc(deltaNow * 1e-3);
+        if (deltaNow > 0) { // Avoid violation of Prometheus API due to time warp
+            counter_self_timer.labels('real', action, labels.device, labels.name, labels.zone, labels.zones).inc(deltaNow * 1e-3);
+        }
         counter_self_timer.labels('user', action, labels.device, labels.name, labels.zone, labels.zones).inc(cpuUsage.user * 1e-6);
         counter_self_timer.labels('system', action, labels.device, labels.name, labels.zone, labels.zones).inc(cpuUsage.system * 1e-6);
         counter_self_counter.labels(action, labels.device, labels.name, labels.zone, labels.zones).inc();
