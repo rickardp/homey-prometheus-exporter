@@ -201,7 +201,7 @@ class PrometheusApp extends Homey.App {
             var labels = getZoneLabels(dev.zone, zones);
             labels.device = devId;
             labels.name = dev.name;
-            labels.class = dev.class ?? "unknown";
+            labels.class = dev.class ? dev.class : "unknown";
             console.log(dev);
             if(!(devId in device_labels)) {
                 // Report initial state

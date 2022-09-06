@@ -4,5 +4,8 @@
   },
   "0.2.7": {
     "en": "Increased timeout on device change"
+  },
+  "0.2.8": {
+    "en": "Added device class to device labels"
   }
 }
