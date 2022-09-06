@@ -10,5 +10,8 @@
   },
   "0.2.9": {
     "en": "Fixed a bug with older Homey firmware due to using too modern JavaScript syntax"
+  },
+  "0.2.10": {
+    "en": "Fixed a minor issue with incorrect real time reported due to clock skew"
   }
 }
