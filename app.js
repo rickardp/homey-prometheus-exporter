@@ -261,18 +261,18 @@ class PrometheusApp extends Homey.App {
                 return; // Strings are not yet mapped
 
             // Make sure state names are valid (e.g. remove dots in names)
-            statename = statename.replace(/[^A-Za-z0-9_]/g, '_');
 
             //console.log("State changed for " + devId + ", " + statename);
-            let key = "homey_device_" + statename;
-            if(!(key in gauge_device)) {
-                gauge_device[key] = new client.Gauge({ name: 'homey_device_' + statename, help: 'State ' + statename, labelNames: ['device', 'name', 'zone', 'zones', 'class', 'driver', 'driver_id'] });
+            if(!(statename in gauge_device)) {
+                let cleaned_state = statename.replace(/[^A-Za-z0-9_]/g, '_');
+                let key = "homey_device_" + cleaned_state;
+                gauge_device[statename] = new client.Gauge({ name: key, help: 'State ' + statename, labelNames: ['device', 'name', 'zone', 'zones', 'class', 'driver', 'driver_id'] });
             }
             let labels = device_labels[devId]
             if(!labels) {
                 console.log("Cannot report unknown device " + devId);
             } else {
-                gauge_device[key].labels(labels.device, labels.name, labels.zone, labels.zones, labels.class, labels.driver, labels.driver_id).set(value);
+                gauge_device[statename].labels(labels.device, labels.name, labels.zone, labels.zones, labels.class, labels.driver, labels.driver_id).set(value);
             }
         }, 'deviceupdate', {device: devId});
     }
