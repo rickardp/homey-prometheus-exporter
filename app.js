@@ -202,6 +202,8 @@ class PrometheusApp extends Homey.App {
             labels.device = devId;
             labels.name = dev.name;
             labels.class = dev.class ? dev.class : "unknown";
+            labels.driver = dev.driverUri ? dev.driverUri : "unknown";
+            labels.driver_id = dev.driverId ? dev.driverId : "unknown";
             console.log(dev);
             if(!(devId in device_labels)) {
                 // Report initial state
@@ -264,13 +266,13 @@ class PrometheusApp extends Homey.App {
             //console.log("State changed for " + devId + ", " + statename);
             let key = "homey_device_" + statename;
             if(!(key in gauge_device)) {
-                gauge_device[key] = new client.Gauge({ name: 'homey_device_' + statename, help: 'State ' + statename, labelNames: ['device', 'name', 'zone', 'zones', 'class'] });
+                gauge_device[key] = new client.Gauge({ name: 'homey_device_' + statename, help: 'State ' + statename, labelNames: ['device', 'name', 'zone', 'zones', 'class', 'driver', 'driver_id'] });
             }
             let labels = device_labels[devId]
             if(!labels) {
                 console.log("Cannot report unknown device " + devId);
             } else {
-                gauge_device[key].labels(labels.device, labels.name, labels.zone, labels.zones, labels.class).set(value);
+                gauge_device[key].labels(labels.device, labels.name, labels.zone, labels.zones, labels.class, labels.driver, labels.driver_id).set(value);
             }
         }, 'deviceupdate', {device: devId});
     }
