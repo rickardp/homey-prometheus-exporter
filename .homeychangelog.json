@@ -13,5 +13,8 @@
   },
   "0.2.10": {
     "en": "Fixed a minor issue with incorrect real time reported due to clock skew"
+  },
+  "0.3.0": {
+    "en": "Added labels for driver app and ID. Fixed a bug with null variable values."
   }
 }
