@@ -16,5 +16,8 @@
   },
   "0.3.0": {
     "en": "Added labels for driver app and ID. Fixed a bug with null variable values."
+  },
+  "0.3.1": {
+    "en": "Minor optimizations and stability improvement"
   }
 }
