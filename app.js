@@ -138,7 +138,7 @@ class PrometheusApp extends Homey.App {
         timeCode(() => {
             var value
             if(variable.type === "number") {
-                value = variable.value;
+                value = variable.value ? variable.value : 0;
             } else if(variable.type === "boolean") {
                 value = variable.value ? 1 : 0;
             } else {
