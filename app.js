@@ -151,9 +151,11 @@ class PrometheusApp extends Homey.App {
 
     updateWeather(weather) {
         timeCode(() => {
-            gauge_weather_humidity.labels(weather.city, weather.country).set(weather.humidity * 100);
-            gauge_weather_pressure.labels(weather.city, weather.country).set(weather.pressure * 1e3);
-            gauge_weather_temperature.labels(weather.city, weather.country).set(weather.temperature);
+            if(weather) {
+                gauge_weather_humidity.labels(weather.city, weather.country).set(weather.humidity * 100);
+                gauge_weather_pressure.labels(weather.city, weather.country).set(weather.pressure * 1e3);
+                gauge_weather_temperature.labels(weather.city, weather.country).set(weather.temperature);
+            }
         }, 'weather');
     }
 
