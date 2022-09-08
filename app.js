@@ -428,7 +428,9 @@ async function timeAsyncCode(func, action, labels) {
         if(!labels.zones) labels.zones = lbl
         const deltaNow = Date.now() - prevRealTime;
         const cpuUsage = process.cpuUsage(prevCpuTime);
-        counter_self_timer.labels('real', action, labels.device, labels.name, labels.zone, labels.zones).inc(deltaNow * 1e-3);
+        if (deltaNow > 0) { // Avoid violation of Prometheus API due to time warp
+            counter_self_timer.labels('real', action, labels.device, labels.name, labels.zone, labels.zones).inc(deltaNow * 1e-3);
+        }
         counter_self_timer.labels('user', action, labels.device, labels.name, labels.zone, labels.zones).inc(cpuUsage.user * 1e-6);
         counter_self_timer.labels('system', action, labels.device, labels.name, labels.zone, labels.zones).inc(cpuUsage.system * 1e-6);
         counter_self_counter.labels(action, labels.device, labels.name, labels.zone, labels.zones).inc();
