@@ -299,7 +299,7 @@ class PrometheusApp extends Homey.App {
     }
 
     async updateSystemInfoStorage() {
-        setTimeout(this.updateSystemInfoStorage.bind(this), 60000);
+        setTimeout(this.updateSystemInfoStorage.bind(this), 600000);
         await timeAsyncCode(async () => {
             let api = await this.getApi();
             try {
