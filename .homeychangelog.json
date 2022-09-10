@@ -19,5 +19,8 @@
   },
   "0.3.1": {
     "en": "Minor optimizations and stability improvement"
+  },
+  "0.3.2": {
+    "en": "Slight reduction of polling interval for storage, since it seems to cause poblems with some Homeys"
   }
 }
