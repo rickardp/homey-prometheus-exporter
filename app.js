@@ -75,7 +75,9 @@ class PrometheusApp extends Homey.App {
 
             deviceListNeedsUpdate = true;
             await this.updateDeviceList();
-            await this.updateSystemInfo();
+            await this.updateSystemInfoCpu();
+            await this.updateSystemInfoStorage();
+            await this.updateSystemInfoMemory();
 
             // Adding notifiers
             console.log("Subscribing to device changes")
@@ -279,8 +281,8 @@ class PrometheusApp extends Homey.App {
         }, 'deviceupdate', {device: devId});
     }
 
-    async updateSystemInfo() {
-        setTimeout(this.updateSystemInfo.bind(this), 30000);
+    async updateSystemInfoCpu() {
+        setTimeout(this.updateSystemInfoCpu.bind(this), 30000);
         await timeAsyncCode(async () => {
             let api = await this.getApi();
             let systemInfo = await api.system.getInfo();
@@ -290,22 +292,34 @@ class PrometheusApp extends Homey.App {
             gauge_load_average_15.set(systemInfo.loadavg[2]);
 
             gauge_cpu_speed.set(systemInfo.cpus[0].speed);
-            for(let time in systemInfo.cpus[0].times) {
-            gauge_cpu.labels(time).set(systemInfo.cpus[0].times[time]);
+            for (let time in systemInfo.cpus[0].times) {
+                gauge_cpu.labels(time).set(systemInfo.cpus[0].times[time]);
             }
+        }, "systeminfo:cpu");
+    }
 
+    async updateSystemInfoStorage() {
+        setTimeout(this.updateSystemInfoStorage.bind(this), 60000);
+        await timeAsyncCode(async () => {
+            let api = await this.getApi();
             try {
                 let storageInfo = await api.system.getStorageInfo();
                 gauge_storage_total.set(storageInfo.total);
                 gauge_storage_free.set(storageInfo.free);
-                for(let app in storageInfo.types) {
+                for (let app in storageInfo.types) {
                     gauge_storage_used.labels(app).set(storageInfo.types[app].size);
                 }
             }
-            catch(err) {
+            catch (err) {
                 console.log("Error getting storage info: " + err.message);
             }
+        }, "systeminfo:storage");
+    }
 
+    async updateSystemInfoMemory() {
+        setTimeout(this.updateSystemInfoMemory.bind(this), 30000);
+        await timeAsyncCode(async () => {
+            let api = await this.getApi();
             try {
                 let memoryInfo = await api.system.getMemoryInfo();
                 gauge_memory_total.set(memoryInfo.total);
@@ -318,7 +332,7 @@ class PrometheusApp extends Homey.App {
             catch(err) {
                 console.log("Error getting memory info: " + err.message);
             }
-        }, "systeminfo")
+        }, "systeminfo:memory");
     }
 
     zwaveStateChange(zwave) {
