@@ -22,5 +22,8 @@
   },
   "0.3.2": {
     "en": "Slight reduction of polling interval for storage, since it seems to cause poblems with some Homeys"
+  },
+  "0.3.3": {
+    "en": "Update storage info less frequently to use less resources for some users"
   }
 }
