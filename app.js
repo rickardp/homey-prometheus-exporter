@@ -35,23 +35,24 @@ const gauge_weather_pressure = new client.Gauge({ name: 'homey_weather_pressure'
 const counter_self_timer = new client.Counter({ name: 'homey_exporter_self_time_seconds', help: 'Time spent in Prometheus exporter', labelNames: ['type', 'action', 'device', 'name', 'zone', 'zones'] });
 const counter_self_counter = new client.Counter({ name: 'homey_exporter_self_call_count', help: 'Calls in Prometheus exporter', labelNames: ['action', 'device', 'name', 'zone', 'zones'] });
 
-let gauge_device = {}
-var device_labels = {}
-let zwave_devices = {}
-let zigbee_devices = {}
-let online_devices = {}
-let user_map = {}
-var device_cap_insts = {}
-var deviceListNeedsUpdate = false;
-
 // Uncomment the line above to enable the inspector (to use Chrome as a debugger)
 // (execution will stop until a debugger is attached)
 //require('inspector').open(9229, '0.0.0.0', true);
 
 class PrometheusApp extends Homey.App {
+    gauge_device = {}
+    gauge_device_cleaned = {}
+    device_labels = {}
+    zwave_devices = {}
+    zigbee_devices = {}
+    online_devices = {}
+    user_map = {}
+    device_cap_insts = {}
+    deviceListNeedsUpdate = false;
+    
     async getApi() {
         if (!this.api) {
-            this.api = await HomeyAPI.forCurrentHomey();
+            this.api = await HomeyAPI.forCurrentHomey(this.homey);
         }
         return this.api;
     }
@@ -63,7 +64,7 @@ class PrometheusApp extends Homey.App {
     }
 
     async onInit() {
-        await timeAsyncCode(async () => {
+        await timeAsyncCode(this.device_labels, async () => {
             let api = await this.getApi();
             let systemInfo = await api.system.getInfo();
 
@@ -73,7 +74,7 @@ class PrometheusApp extends Homey.App {
             gauge_app_start_time.set(appStartTime)
             gauge_boot_time.labels(systemInfo.homeyVersion).set(bootTime)
 
-            deviceListNeedsUpdate = true;
+            this.deviceListNeedsUpdate = true;
             await this.updateDeviceList();
             await this.updateSystemInfoCpu();
             await this.updateSystemInfoStorage();
@@ -83,29 +84,31 @@ class PrometheusApp extends Homey.App {
             console.log("Subscribing to device changes")
             api.devices.on('device.create', dev => {
                 console.log('Adding new device ' + dev.id + ' with name ' + dev.name + ' driver ' + dev.driverId)
-                deviceListNeedsUpdate = true;
+                this.deviceListNeedsUpdate = true;
                 setTimeout(this.updateDeviceList.bind(this), 1000);
             });
             api.devices.on('device.update', dev => {
                 console.log('Updating device ' + dev.id + ' with name ' + dev.name + ' driver ' + dev.driverId)
-                deviceListNeedsUpdate = true;
+                this.deviceListNeedsUpdate = true;
                 setTimeout(this.updateDeviceList.bind(this), 10000);
             });
             api.devices.on('device.delete', dev => {
                 console.log('Deleting device ' + dev.id + ' with name ' + dev.name + ' driver ' + dev.driverId)
-                deviceListNeedsUpdate = true;
+                this.deviceListNeedsUpdate = true;
                 setTimeout(this.updateDeviceList.bind(this), 1000);
             });
 
             console.log("Updating user map");
             let users = await api.users.getUsers();
             let updatePresence = this.updatePresence;
+            let device_labels = this.device_labels;
+            let user_map = this.user_map;
             for(let uid in users) {
                 console.log("User " + uid + " is " + users[uid].athomId);
-                user_map[uid] = users[uid].athomId;
+                this.user_map[uid] = users[uid].athomId;
                 users[uid].on('$update', function(self) {
                     console.log("User " + self.athomId + "changed, updating presence");
-                    updatePresence(users);
+                    updatePresence(device_labels, user_map, users);
                 });
             }
             updatePresence(users);
@@ -125,9 +128,9 @@ class PrometheusApp extends Homey.App {
             api.zwave.on('state', this.zwaveStateChange.bind(this));
             api.zigBee.on('state', this.zigbeeStateChange.bind(this));
 
-            let respond = function(request, response) {
+            let respond = async function(request, response) {
                 response.contentType("text/plain; charset=utf-8");
-                response.end(client.register.metrics());
+                response.end(await client.register.metrics());
             };
 
             server.get("/metrics", respond);
@@ -141,7 +144,7 @@ class PrometheusApp extends Homey.App {
     }
 
     updateVariable(variable) {
-        timeCode(() => {
+        timeCode(this.device_labels, () => {
             var value
             if(variable.type === "number") {
                 value = variable.value ? variable.value : 0;
@@ -156,7 +159,7 @@ class PrometheusApp extends Homey.App {
     }
 
     updateWeather(weather) {
-        timeCode(() => {
+        timeCode(this.device_labels, () => {
             if(weather) {
                 gauge_weather_humidity.labels(weather.city, weather.country).set(weather.humidity * 100);
                 gauge_weather_pressure.labels(weather.city, weather.country).set(weather.pressure * 1e3);
@@ -165,8 +168,8 @@ class PrometheusApp extends Homey.App {
         }, 'weather');
     }
 
-    updatePresence(users) {
-        timeCode(() => {
+    updatePresence(device_labels, user_map, users) {
+        timeCode(device_labels, () => {
             for(let uid in user_map) {
                 let present = users[uid].present;
                 let asleep = users[uid].asleep;
@@ -178,24 +181,24 @@ class PrometheusApp extends Homey.App {
     }
 
     async updateDeviceList() {
-        await timeAsyncCode(async () => {
-            if(!deviceListNeedsUpdate) return;
-            deviceListNeedsUpdate = false;
+        await timeAsyncCode(this.device_labels, async () => {
+            if(!this.deviceListNeedsUpdate) return;
+            this.deviceListNeedsUpdate = false;
             this.log('Update device list');
             let api = await this.getApi();
             let zones = await api.zones.getZones();
             let devices = await api.devices.getDevices();
 
-            device_labels = {}
-            for(let key in gauge_device) {
-                gauge_device[key].reset();
+            this.device_labels = {}
+            for(let key in this.gauge_device) {
+                this.gauge_device[key].reset();
             }
-            for(let devId in device_cap_insts) {
-                for(let capInst of device_cap_insts[devId]) {
+            for(let devId in this.device_cap_insts) {
+                for(let capInst of this.device_cap_insts[devId]) {
                     capInst.destroy();
                 }
             }
-            device_cap_insts = {}
+            this.device_cap_insts = {}
 
             for(let devId in devices) {
                 this.registerDevice(devId, devices[devId], zones);
@@ -204,7 +207,7 @@ class PrometheusApp extends Homey.App {
     }
 
     registerDevice(devId, dev, zones) {
-        timeCode(() => {
+        timeCode(this.device_labels, () => {
             console.log("Registering device " + devId);
             var labels = getZoneLabels(dev.zone, zones);
             labels.device = devId;
@@ -213,9 +216,9 @@ class PrometheusApp extends Homey.App {
             labels.driver = dev.driverUri ? dev.driverUri : "unknown";
             labels.driver_id = dev.driverId ? dev.driverId : "unknown";
             console.log(dev);
-            if(!(devId in device_labels)) {
+            if(!(devId in this.device_labels)) {
                 // Report initial state
-                device_labels[devId] = labels; // Need to do this before reportState
+                this.device_labels[devId] = labels; // Need to do this before reportState
                 let s = dev.capabilities;
                 let capInsts = []
                 for(let sn of s) {
@@ -237,29 +240,29 @@ class PrometheusApp extends Homey.App {
                     capInsts.push(capInst);
                     onCapChg(capInst.value);
                 }
-                device_cap_insts[devId] = capInsts; // Register so that we can dispose when device renamed/moved
+                this.device_cap_insts[devId] = capInsts; // Register so that we can dispose when device renamed/moved
             } else {
-                device_labels[devId] = labels; // Update labels in case device was renamed/moved
+                this.device_labels[devId] = labels; // Update labels in case device was renamed/moved
             }
             if(dev.flags.includes("zwave")) {
                 let zwaveId = dev.settings.zw_node_id;
                 if(zwaveId) {
                     console.log("Device " + dev.name + " has Z-Wave node id " + zwaveId);
-                    zwave_devices[zwaveId] = devId
+                    this.zwave_devices[zwaveId] = devId
                 }
             }
             if(dev.flags.includes("zigbee")) {
                 let zigbeeId = dev.settings.zb_device_id;
                 if(zigbeeId) {
                     console.log("Device " + dev.name + " has ZigBee device id " + zigbeeId);
-                    zigbee_devices[zigbeeId] = devId
+                    this.zigbee_devices[zigbeeId] = devId
                 }
             }
         }, 'registerdevice', {device: devId});
     }
 
     reportState(devId, statename, value) {
-        timeCode(() => {
+        timeCode(this.device_labels, () => {
             if(value === null || value === undefined) return;
 
             // Convert type
@@ -271,23 +274,27 @@ class PrometheusApp extends Homey.App {
             // Make sure state names are valid (e.g. remove dots in names)
 
             //console.log("State changed for " + devId + ", " + statename);
-            if(!(statename in gauge_device)) {
+            if(!(statename in this.gauge_device)) {
                 let cleaned_state = statename.replace(/[^A-Za-z0-9_]/g, '_');
+                while (cleaned_state in this.gauge_device_cleaned) {
+                    cleaned_state += '_';
+                }
+                this.gauge_device_cleaned[cleaned_state] = statename;
                 let key = "homey_device_" + cleaned_state;
-                gauge_device[statename] = new client.Gauge({ name: key, help: 'State ' + statename, labelNames: ['device', 'name', 'zone', 'zones', 'class', 'driver', 'driver_id'] });
+                this.gauge_device[statename] = new client.Gauge({ name: key, help: 'State ' + statename, labelNames: ['device', 'name', 'zone', 'zones', 'class', 'driver', 'driver_id'] });
             }
-            let labels = device_labels[devId]
+            let labels = this.device_labels[devId]
             if(!labels) {
                 console.log("Cannot report unknown device " + devId);
             } else {
-                gauge_device[statename].labels(labels.device, labels.name, labels.zone, labels.zones, labels.class, labels.driver, labels.driver_id).set(value);
+                this.gauge_device[statename].labels(labels.device, labels.name, labels.zone, labels.zones, labels.class, labels.driver, labels.driver_id).set(value);
             }
         }, 'deviceupdate', {device: devId});
     }
 
     async updateSystemInfoCpu() {
         setTimeout(this.updateSystemInfoCpu.bind(this), 30000);
-        await timeAsyncCode(async () => {
+        await timeAsyncCode(this.device_labels, async () => {
             let api = await this.getApi();
             let systemInfo = await api.system.getInfo();
 
@@ -304,7 +311,7 @@ class PrometheusApp extends Homey.App {
 
     async updateSystemInfoStorage() {
         setTimeout(this.updateSystemInfoStorage.bind(this), 600000);
-        await timeAsyncCode(async () => {
+        await timeAsyncCode(this.device_labels, async () => {
             let api = await this.getApi();
             try {
                 let storageInfo = await api.system.getStorageInfo();
@@ -322,7 +329,7 @@ class PrometheusApp extends Homey.App {
 
     async updateSystemInfoMemory() {
         setTimeout(this.updateSystemInfoMemory.bind(this), 30000);
-        await timeAsyncCode(async () => {
+        await timeAsyncCode(this.device_labels, async () => {
             let api = await this.getApi();
             try {
                 let memoryInfo = await api.system.getMemoryInfo();
@@ -340,13 +347,13 @@ class PrometheusApp extends Homey.App {
     }
 
     zwaveStateChange(zwave) {
-        timeCode(() => {
-            if(zwave && zwave.zw_state && zwave.zw_state.stats && Object.keys(zwave_devices).length > 0) {
+        timeCode(this.device_labels, () => {
+            if(zwave && zwave.zw_state && zwave.zw_state.stats && Object.keys(this.zwave_devices).length > 0) {
                 let ts = zwave.$lastUpdated * 1e-3;
                 if(!ts) return;
-                for(let zwn in zwave_devices) {
+                for(let zwn in this.zwave_devices) {
                     let net = zwave.zw_state.stats['node_' + zwn + '_network'];
-                    let labels = device_labels[zwave_devices[zwn]];
+                    let labels = this.device_labels[this.zwave_devices[zwn]];
                     if(!labels) continue;
 
                     if(net) {
@@ -358,18 +365,18 @@ class PrometheusApp extends Homey.App {
                     if(online === undefined) online = true;
 
                     var timeOnline = 0.0;
-                    let prevOnline = online_devices[zwave_devices[zwn]];
+                    let prevOnline = this.online_devices[this.zwave_devices[zwn]];
                     if(prevOnline) {
                     timeOnline = ts - prevOnline; 
                     }
 
                     if(online) {
-                        online_devices[zwave_devices[zwn]] = ts;
+                        this.online_devices[this.zwave_devices[zwn]] = ts;
                         if(prevOnline === null) {
                             counter_online_count.labels(zwn, labels.device, labels.name, labels.zone, labels.zones).inc()
                         }
                     } else {
-                        online_devices[zwave_devices[zwn]] = null;
+                        this.online_devices[this.zwave_devices[zwn]] = null;
                     }
                     if(timeOnline > 0) {
                         counter_online_time.labels(zwn, labels.device, labels.name, labels.zone, labels.zones).inc(timeOnline)
@@ -380,33 +387,33 @@ class PrometheusApp extends Homey.App {
     }
 
     zigbeeStateChange(zigbee) {
-        timeCode(() => {
-            if(zigbee && zigbee.zigbee_state && zigbee.zigbee_state.devices && Object.keys(zigbee_devices).length > 0) {
+        timeCode(this.device_labels, () => {
+            if(zigbee && zigbee.zigbee_state && zigbee.zigbee_state.devices && Object.keys(this.zigbee_devices).length > 0) {
                 let ts = zigbee.$lastUpdated * 1e-3;
                 if(!ts) return;
                 for(let node of zigbee.zigbee_state.devices) {
                     if(!node.deviceId) continue;
-                    let zbd = zigbee_devices[node.deviceId];
+                    let zbd = this.zigbee_devices[node.deviceId];
                     if(!zbd) continue;
 
-                    let labels = device_labels[zbd];
+                    let labels = this.device_labels[zbd];
                     if(!labels) continue;
                     
                     let online = node.status !== "offline";
 
                     var timeOnline = 0.0;
-                    let prevOnline = online_devices[zbd];
+                    let prevOnline = this.online_devices[zbd];
                     if(prevOnline) {
                     timeOnline = ts - prevOnline; 
                     }
 
                     if(online) {
-                        online_devices[zbd] = ts;
+                        this.online_devices[zbd] = ts;
                         if(prevOnline === null) {
                             counter_online_count.labels(node.deviceId, labels.device, labels.name, labels.zone, labels.zones).inc()
                         }
                     } else {
-                        online_devices[zbd] = null;
+                        this.online_devices[zbd] = null;
                     }
                     if(timeOnline > 0) {
                         counter_online_time.labels(node.deviceId, labels.device, labels.name, labels.zone, labels.zones).inc(timeOnline)
@@ -432,7 +439,7 @@ function getZoneLabels(zoneId, zones) {
     }
 }
 
-async function timeAsyncCode(func, action, labels) {
+async function timeAsyncCode(device_labels, func, action, labels) {
     const prevCpuTime = process.cpuUsage();
     const prevRealTime = Date.now();
     try {
@@ -459,7 +466,7 @@ async function timeAsyncCode(func, action, labels) {
     }
 }
 
-function timeCode(func, action, labels) {
+function timeCode(device_labels, func, action, labels) {
     const prevCpuTime = process.cpuUsage();
     const prevRealTime = Date.now();
     try {

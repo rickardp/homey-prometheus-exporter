@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/athombv/node-homey-lib/master/assets/app/schema.json",
   "id": "io.prometheus",
-  "sdk": 2,
+  "sdk": 3,
   "name": {
     "en": "Prometheus.io"
   },
@@ -23,8 +23,8 @@
   },
   "homeyCommunityTopicId": 7375,
   "category": "tools",
-  "version": "0.3.3",
-  "compatibility": ">=2.0.0",
+  "version": "0.4.1",
+  "compatibility": ">=5.0.0",
   "brandColor": "#e6522c",
   "author": {
     "name": "Rickard",

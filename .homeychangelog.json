@@ -25,5 +25,11 @@
   },
   "0.3.3": {
     "en": "Update storage info less frequently to use less resources for some users"
+  },
+  "0.4.0": {
+    "en": "Upgraded metadata to support Homey v3 API"
+  },
+  "0.4.1": {
+    "en": "Fixed issue with conflicting metrics"
   }
 }

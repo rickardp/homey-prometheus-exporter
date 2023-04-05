@@ -5,9 +5,9 @@
   "main": "app.js",
   "repository": "https://github.com/rickardp/homey-prometheus-exporter",
   "dependencies": {
-    "athom-api": "^2.1.155",
-    "express": "^4.16.4",
-    "prom-client": "^11.2.1"
+    "athom-api": "^3.8.4",
+    "express": "^4.18.2",
+    "prom-client": "^14.2.0"
   },
   "devDependencies": {},
   "scripts": {
