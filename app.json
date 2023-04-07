@@ -5,9 +5,7 @@
   "name": {
     "en": "Prometheus.io"
   },
-  "permissions": [
-    "homey:manager:api"
-  ],
+  "permissions": ["homey:manager:api"],
   "description": {
     "en": "Metrics exporter for prometheus.io"
   },
@@ -23,7 +21,7 @@
   },
   "homeyCommunityTopicId": 7375,
   "category": "tools",
-  "version": "0.5.0",
+  "version": "1.0.0",
   "compatibility": ">=5.0.0",
   "brandColor": "#e6522c",
   "author": {
