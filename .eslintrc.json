@@ -1,0 +1,33 @@
+{
+  "parser": "@typescript-eslint/parser",
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/eslint-recommended",
+    "plugin:@typescript-eslint/recommended",
+    "athom"
+  ],
+  "plugins": ["@typescript-eslint"],
+  "rules": {
+    "strict": "off",
+    "semi": "off",
+    "@typescript-eslint/semi": "error",
+    "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/naming-convention": [
+      "error",
+      { "selector": "class", "format": ["PascalCase"] },
+      { "selector": "interface", "format": ["PascalCase"] },
+      { "selector": "typeProperty", "format": ["camelCase"] }
+    ],
+    "node/no-unsupported-features/es-syntax": ["error", { "ignores": ["modules"] }],
+    "no-console": "off",
+    "padded-blocks": "off",
+    "import/no-unresolved": "off",
+    "import/extensions": "off",
+    "node/no-missing-import": "off",
+    "implicit-arrow-linebreak": "off",
+    "function-paren-newline": "off",
+    "operator-linebreak": "off",
+    "no-multi-assign": "off",
+    "@typescript-eslint/no-empty-function": "off"
+  }
+}

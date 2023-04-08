@@ -1,4 +1,4 @@
-import PrometheusMetrics from "./prometheus/metrics";
+import PrometheusMetrics from './prometheus/metrics';
 
 export default class Profiling {
   readonly metrics: PrometheusMetrics;
@@ -7,21 +7,17 @@ export default class Profiling {
     this.metrics = metrics;
   }
 
-  timeAsyncCode = async (
-    func: () => void,
-    action: string,
-    labels: any | null = null
-  ) => {
+  timeAsyncCode = async (func: () => void, action: string, labels: any | null = null) => {
     const prevCpuTime = process.cpuUsage();
     const prevRealTime = Date.now();
     try {
       return await func();
     } finally {
-      const lbl = "_" + action;
+      const lbl = `_${action}`;
       if (!labels) {
         labels = {};
       } else if (labels.device && !labels.zone) {
-        labels = this.metrics.device_labels.get(labels.device);
+        labels = this.metrics.deviceLabels[labels.device];
       }
       if (!labels.name) labels.name = lbl;
       if (!labels.device) labels.device = lbl;
@@ -32,39 +28,16 @@ export default class Profiling {
       if (deltaNow > 0) {
         // Avoid violation of Prometheus API due to time warp
         this.metrics.counter_self_timer
-          .labels(
-            "real",
-            action,
-            labels.device,
-            labels.name,
-            labels.zone,
-            labels.zones
-          )
+          .labels('real', action, labels.device, labels.name, labels.zone, labels.zones)
           .inc(deltaNow * 1e-3);
       }
       this.metrics.counter_self_timer
-        .labels(
-          "user",
-          action,
-          labels.device,
-          labels.name,
-          labels.zone,
-          labels.zones
-        )
+        .labels('user', action, labels.device, labels.name, labels.zone, labels.zones)
         .inc(cpuUsage.user * 1e-6);
       this.metrics.counter_self_timer
-        .labels(
-          "system",
-          action,
-          labels.device,
-          labels.name,
-          labels.zone,
-          labels.zones
-        )
+        .labels('system', action, labels.device, labels.name, labels.zone, labels.zones)
         .inc(cpuUsage.system * 1e-6);
-      this.metrics.counter_self_counter
-        .labels(action, labels.device, labels.name, labels.zone, labels.zones)
-        .inc();
+      this.metrics.counter_self_counter.labels(action, labels.device, labels.name, labels.zone, labels.zones).inc();
     }
   };
 
@@ -74,11 +47,11 @@ export default class Profiling {
     try {
       return func();
     } finally {
-      const lbl = "_" + action;
+      const lbl = `_${action}`;
       if (!labels) {
         labels = {};
       } else if (labels.device && !labels.zone) {
-        labels = this.metrics.device_labels.get(labels.device);
+        labels = this.metrics.deviceLabels[labels.device];
       }
       if (!labels.name) labels.name = lbl;
       if (!labels.device) labels.device = lbl;
@@ -89,39 +62,16 @@ export default class Profiling {
       if (deltaNow > 0) {
         // Avoid violation of Prometheus API due to time warp
         this.metrics.counter_self_timer
-          .labels(
-            "real",
-            action,
-            labels.device,
-            labels.name,
-            labels.zone,
-            labels.zones
-          )
+          .labels('real', action, labels.device, labels.name, labels.zone, labels.zones)
           .inc(deltaNow * 1e-3);
       }
       this.metrics.counter_self_timer
-        .labels(
-          "user",
-          action,
-          labels.device,
-          labels.name,
-          labels.zone,
-          labels.zones
-        )
+        .labels('user', action, labels.device, labels.name, labels.zone, labels.zones)
         .inc(cpuUsage.user * 1e-6);
       this.metrics.counter_self_timer
-        .labels(
-          "system",
-          action,
-          labels.device,
-          labels.name,
-          labels.zone,
-          labels.zones
-        )
+        .labels('system', action, labels.device, labels.name, labels.zone, labels.zones)
         .inc(cpuUsage.system * 1e-6);
-      this.metrics.counter_self_counter
-        .labels(action, labels.device, labels.name, labels.zone, labels.zones)
-        .inc();
+      this.metrics.counter_self_counter.labels(action, labels.device, labels.name, labels.zone, labels.zones).inc();
     }
   };
 }

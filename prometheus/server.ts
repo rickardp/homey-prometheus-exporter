@@ -1,7 +1,6 @@
-import express from "express";
-import { Request, Response } from "express";
-import { Server } from "http";
-import PrometheusMetrics from "./metrics";
+import express, { Request, Response } from 'express';
+import { Server } from 'http';
+import PrometheusMetrics from './metrics';
 
 const PORT = 9414;
 
@@ -15,23 +14,23 @@ export default class PrometheusServer {
 
   start = () => {
     if (this.server !== null) {
-      console.log("Already started");
+      console.log('Already started');
       return;
     }
-    console.log("Starting Prometheus exporter server on port " + PORT);
-    var expressServer = express();
-    expressServer.get("/metrics", this.respond);
-    expressServer.get("/prometheus/metrics", this.respond);
+    console.log(`Starting Prometheus exporter server on port ${PORT}`);
+    const expressServer = express();
+    expressServer.get('/metrics', this.respond);
+    expressServer.get('/prometheus/metrics', this.respond);
     this.server = expressServer.listen(PORT);
   };
 
   stop = () => {
-    console.log("Stopping Prometheus exporter server");
+    console.log('Stopping Prometheus exporter server');
     this.server?.close();
   };
 
   respond = async (request: Request, response: Response) => {
-    response.contentType("text/plain; charset=utf-8");
+    response.contentType('text/plain; charset=utf-8');
     response.end(await this.metrics?.serve());
   };
 }

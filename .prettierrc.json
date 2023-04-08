@@ -1,0 +1,8 @@
+{
+  "trailingComma": "all",
+  "tabWidth": 2,
+  "semi": true,
+  "singleQuote": true,
+  "plugins": ["eslint-plugin-prettier"],
+  "printWidth": 120
+}

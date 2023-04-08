@@ -22,5 +22,6 @@ jobs:
         node-version: 12.x
         cache: 'npm'
     - run: npm install -g homey
+    - run: npm run lint
     - run: homey app validate
     - run: homey app build
