@@ -10,6 +10,12 @@ The following metrics are exported:
 * Logic Variables
 * Weather data
 
+## How to support the project
+
+* If you can code, PRs with improvements and bug fixes are always appreciated. Be sure to check the issue list if there is anything up for grabs
+* There is a lot of different variations of the Homey nowadays. The maintainer currently runs a Homey early 2016 (the first production Homey), which is the device that gets the most testing. If you own a differnt Homey, testing and reporting issues is much appreciated.
+* If you prefer to, and have some money to spare, I have also set up a donate link that goes directly to purchasing more modern Homey devices so that I have a more modern device for testing.
+
 ## How to use it
 
 First, you need a Prometheus.io instance. The easiest way to install such an instance is to use Docker. This app has been developed
