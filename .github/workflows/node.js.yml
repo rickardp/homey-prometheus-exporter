@@ -19,7 +19,7 @@ jobs:
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v3
       with:
-        node-version: 12.x
+        node-version: 18.x
         cache: 'npm'
     - run: npm install -g homey
     - run: npm run lint
