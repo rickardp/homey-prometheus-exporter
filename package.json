@@ -6,7 +6,7 @@
   "repository": "https://github.com/rickardp/homey-prometheus-exporter",
   "dependencies": {
     "athom-api": "^3.8.4",
-    "express": "^4.18.2",
+    "express": "^4.19.2",
     "prom-client": "^14.2.0"
   },
   "devDependencies": {
